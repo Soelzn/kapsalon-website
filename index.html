@@ -485,8 +485,8 @@
     </div>
 
     <script>
-        // Configuration - Nieuwe Google Script URL (met bookAppointment via GET)
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHU_0FTAmtxyexv2ezzTdZYiYiwrDtLCHp-BbP70H4uZapsRR7r2UqQKAAB5u5BlIeDQ/exec';
+        // Configuration - Nieuwe Google Script URL (met JSONP support)
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZsmZdorhgCqBMaaV4FPf7mdMiCGrUMMTZbMk1lMTEiWKy1nPDymXJsypuqD4kcNuXGA/exec';
         
         // Set to true to use only demo data (for testing)
         const DEMO_MODE = false;
@@ -673,7 +673,7 @@
             return durations[serviceType] || 30;
         }
 
-        // Load booked appointments from Google Sheets
+        // Load booked appointments using JSONP to avoid CORS
         async function loadBookedAppointments(date) {
             // If demo mode is enabled, use mock data
             if (DEMO_MODE) {
@@ -685,38 +685,60 @@
             
             try {
                 console.log('Loading bookings for date:', date);
-                console.log('Using URL:', `${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}`);
                 
-                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
+                // Use JSONP instead of fetch to avoid CORS issues
+                const jsonpUrl = `${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}&callback=handleBookingsResponse`;
+                console.log('Using JSONP URL:', jsonpUrl);
+                
+                // Create promise for JSONP
+                const result = await new Promise((resolve, reject) => {
+                    // Set timeout
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timeout'));
+                    }, 10000);
+                    
+                    // Create callback function
+                    window.handleBookingsResponse = function(data) {
+                        clearTimeout(timeout);
+                        delete window.handleBookingsResponse;
+                        resolve(data);
+                    };
+                    
+                    // Create script tag
+                    const script = document.createElement('script');
+                    script.src = jsonpUrl;
+                    script.onerror = () => {
+                        clearTimeout(timeout);
+                        delete window.handleBookingsResponse;
+                        reject(new Error('Script load failed'));
+                    };
+                    
+                    document.head.appendChild(script);
+                    
+                    // Clean up script tag after loading
+                    script.onload = () => {
+                        setTimeout(() => {
+                            if (script.parentNode) {
+                                script.parentNode.removeChild(script);
+                            }
+                        }, 1000);
+                    };
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('Received result:', result);
+                console.log('JSONP result:', result);
                 
                 if (result.error) {
-                    console.error('Server error:', result.error);
                     throw new Error(result.error);
                 }
                 
                 bookedSlots = result.bookings || [];
-                console.log('Loaded booked slots:', bookedSlots);
+                console.log('Loaded booked slots via JSONP:', bookedSlots);
                 
             } catch (error) {
-                console.error('Error loading bookings:', error);
+                console.error('Error loading bookings via JSONP:', error);
                 console.log('Falling back to mock data');
                 
-                // Fallback to mock data if Google Sheets fails
+                // Fallback to mock data
                 bookedSlots = mockBookedAppointments.filter(appointment => appointment.date === date);
                 
                 // Show user-friendly error message but continue with mock data
@@ -800,6 +822,8 @@
                 
                 const response = await fetch(url, {
                     method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
                     headers: {
                         'Content-Type': 'application/json',
                     }
@@ -838,6 +862,8 @@
                 
             } catch (error) {
                 console.error('Detailed booking error:', error);
+                console.error('Error type:', error.constructor.name);
+                console.error('Error message:', error.message);
                 
                 // Fallback: still add to mock data for demo purposes
                 mockBookedAppointments.push({
@@ -909,8 +935,11 @@
             }, 5000);
         }
 
-        // Initialize
-        updateTimeSlots();
+        // Test button - tijdelijk om direct te testen
+        function testDirectBooking() {
+            const testUrl = 'https://script.google.com/macros/s/AKfycbzZsmZdorhgCqBMaaV4FPf7mdMiCGrUMMTZbMk1lMTEiWKy1nPDymXJsypuqD4kcNuXGA/exec?action=bookAppointment&name=DirectTest&email=direct@test.com&phone=06-87654321&date=2025-06-16&time=11:00&service=knippen&price=25&duration=30';
+            window.open(testUrl, '_blank');
+        }
     </script>
 </body>
 </html>
