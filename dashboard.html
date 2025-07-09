@@ -614,65 +614,79 @@
             }
         }
 
-        // Load all appointments
+        // Load all appointments using JSONP
         async function loadAllAppointments() {
             try {
                 const container = document.getElementById('appointmentsTableContainer');
                 container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Afspraken laden...</p></div>';
                 
-                // Try to load real data from Google Sheets first
-                try {
-                    console.log('Loading all appointments from Google Sheets...');
-                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAllBookings`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
+                console.log('Loading all appointments from Google Sheets via JSONP...');
+                
+                // Use JSONP to avoid CORS issues
+                const result = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timeout'));
+                    }, 10000);
                     
-                    console.log('Response status:', response.status);
-                    console.log('Response ok:', response.ok);
+                    // Create unique callback function name
+                    const callbackName = 'handleAllAppointmentsResponse_' + Date.now();
                     
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                    window[callbackName] = function(data) {
+                        clearTimeout(timeout);
+                        delete window[callbackName];
+                        resolve(data);
+                    };
                     
-                    const responseText = await response.text();
-                    console.log('Raw response:', responseText);
+                    const script = document.createElement('script');
+                    script.src = `${GOOGLE_SCRIPT_URL}?action=getAllBookings&callback=${callbackName}`;
+                    script.onerror = () => {
+                        clearTimeout(timeout);
+                        delete window[callbackName];
+                        reject(new Error('Script load failed'));
+                    };
                     
-                    const result = JSON.parse(responseText);
-                    console.log('Parsed result:', result);
+                    document.head.appendChild(script);
                     
-                    if (result.error) {
-                        throw new Error(result.error);
-                    }
-                    
-                    allAppointments = result.appointments || [];
-                    console.log('Loaded real appointments:', allAppointments.length);
-                    
-                    // Show success message if using real data
-                    if (allAppointments.length === 0) {
-                        const successHTML = '<div style="background: #d4edda; color: #155724; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">✅ Verbonden met Google Sheets - Nog geen afspraken</div>';
-                        container.innerHTML = successHTML;
-                    }
-                    
-                } catch (error) {
-                    console.error('Error loading real appointments, using demo data:', error);
-                    
-                    // Fallback to mock data if Google Sheets fails
-                    allAppointments = generateMockAppointments();
-                    
-                    // Show warning with specific error
-                    const warningHTML = `<div style="background: #fff3cd; color: #856404; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">⚠️ Google Sheets niet bereikbaar: ${error.message}<br>Toont demo data</div>`;
-                    container.innerHTML = warningHTML;
+                    script.onload = () => {
+                        setTimeout(() => {
+                            if (script.parentNode) {
+                                script.parentNode.removeChild(script);
+                            }
+                        }, 1000);
+                    };
+                });
+                
+                console.log('Received appointments result via JSONP:', result);
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                allAppointments = result.appointments || [];
+                console.log('Loaded real appointments via JSONP:', allAppointments.length);
+                
+                // Show success message if using real data
+                if (allAppointments.length === 0) {
+                    const successHTML = '<div style="background: #d4edda; color: #155724; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">✅ Verbonden met Google Sheets - Nog geen afspraken</div>';
+                    container.innerHTML = successHTML;
+                } else {
+                    const successHTML = `<div style="background: #d4edda; color: #155724; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">✅ Verbonden met Google Sheets - ${allAppointments.length} afspraken geladen</div>`;
+                    container.innerHTML = successHTML;
                 }
                 
                 displayAppointments(allAppointments);
                 
             } catch (error) {
-                console.error('Error loading appointments:', error);
-                document.getElementById('appointmentsTableContainer').innerHTML = 
-                    `<div class="no-appointments">❌ Fout bij laden afspraken: ${error.message}</div>`;
+                console.error('Error loading real appointments, using demo data:', error);
+                
+                // Fallback to mock data if Google Sheets fails
+                allAppointments = generateMockAppointments();
+                
+                // Show warning with specific error
+                const warningHTML = `<div style="background: #fff3cd; color: #856404; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">⚠️ Google Sheets niet bereikbaar: ${error.message}<br>Toont demo data</div>`;
+                container.innerHTML = warningHTML;
+                
+                displayAppointments(allAppointments);
             }
         }
 
@@ -1079,7 +1093,7 @@
             }
         }
 
-        // Test connection
+        // Test connection using JSONP
         async function testConnection() {
             const btn = event.target;
             const originalText = btn.textContent;
@@ -1087,29 +1101,52 @@
             btn.disabled = true;
             
             try {
-                console.log('Testing connection to Google Sheets...');
+                console.log('Testing connection to Google Sheets via JSONP...');
                 
-                // Test getBookings
-                const bookingsResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getBookings&date=2025-06-09`);
-                const bookingsResult = await bookingsResponse.json();
+                // Test getAllBookings using JSONP
+                const result = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timeout'));
+                    }, 10000);
+                    
+                    const callbackName = 'testConnectionCallback_' + Date.now();
+                    
+                    window[callbackName] = function(data) {
+                        clearTimeout(timeout);
+                        delete window[callbackName];
+                        resolve(data);
+                    };
+                    
+                    const script = document.createElement('script');
+                    script.src = `${GOOGLE_SCRIPT_URL}?action=getAllBookings&callback=${callbackName}`;
+                    script.onerror = () => {
+                        clearTimeout(timeout);
+                        delete window[callbackName];
+                        reject(new Error('Script load failed'));
+                    };
+                    
+                    document.head.appendChild(script);
+                    
+                    script.onload = () => {
+                        setTimeout(() => {
+                            if (script.parentNode) {
+                                script.parentNode.removeChild(script);
+                            }
+                        }, 1000);
+                    };
+                });
                 
-                console.log('Bookings test result:', bookingsResult);
+                console.log('Connection test result:', result);
                 
-                // Test getAllBookings
-                const allBookingsResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAllBookings`);
-                const allBookingsResult = await allBookingsResponse.json();
-                
-                console.log('All bookings test result:', allBookingsResult);
-                
-                if (bookingsResult.error || allBookingsResult.error) {
-                    throw new Error(bookingsResult.error || allBookingsResult.error);
+                if (result.error) {
+                    throw new Error(result.error);
                 }
                 
                 btn.textContent = '✅ Verbinding OK!';
                 btn.style.background = '#28a745';
                 
                 // Show detailed results
-                const appointmentCount = allBookingsResult.appointments ? allBookingsResult.appointments.length : 0;
+                const appointmentCount = result.appointments ? result.appointments.length : 0;
                 setTimeout(() => {
                     alert(`🎉 Verbinding succesvol!\n\n📊 Gevonden: ${appointmentCount} afspraken\n🔗 Google Sheets is verbonden\n📧 Email notificaties actief`);
                 }, 500);
