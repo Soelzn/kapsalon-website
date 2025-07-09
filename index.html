@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapsalon Afspraak Boeken</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .service-card {
+            background: #f8f9fa;
+            border: 2px solid #e1e1e1;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .service-card:hover::before {
+            left: 100%;
+        }
+
+        .service-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .service-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .service-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .service-card p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .time-slot:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        .time-slot.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .time-slot.unavailable {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .time-slot.booked {
+            background: #ffebee;
+            border-color: #ffcdd2;
+            color: #c62828;
+            cursor: not-allowed;
+            position: relative;
+            opacity: 0.7;
+        }
+
+        .time-slot.booked::after {
+            content: '✗';
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 0.8em;
+            color: #c62828;
+        }
+
+        .availability-legend {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .legend-color.available {
+            background: #f8f9fa;
+        }
+
+        .legend-color.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .legend-color.booked {
+            background: #ffebee;
+        }
+
+        .legend-color.past {
+            background: #f8d7da;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .availability-status {
+            text-align: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .availability-status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .availability-status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .info-box h3 {
+            color: #1565c0;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            color: #1976d2;
+            margin-left: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .service-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .time-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✂️ Kapsalon Boeken</h1>
+            <p>Maak eenvoudig een afspraak voor uw kapperservice</p>
+        </div>
+
+        <div class="info-box">
+            <h3>Openingstijden</h3>
+            <ul>
+                <li>Maandag - Vrijdag: 09:00 - 18:00</li>
+                <li>Zaterdag: 09:00 - 17:00</li>
+                <li>Zondag: Gesloten</li>
+            </ul>
+        </div>
+
+        <form id="appointmentForm">
+            <div class="form-group">
+                <label for="name">Naam *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefoonnummer *</label>
+                <input type="tel" id="phone" name="phone" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Datum *</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+
+            <div class="form-group">
+                <label>Service *</label>
+                <div class="service-grid">
+                    <div class="service-card" data-service="knippen" data-price="25" data-duration="30">
+                        <h3>Knippen</h3>
+                        <p>€25 - 30 min</p>
+                    </div>
+                    <div class="service-card" data-service="wassen-knippen" data-price="35" data-duration="45">
+                        <h3>Wassen & Knippen</h3>
+                        <p>€35 - 45 min</p>
+                    </div>
+                    <div class="service-card" data-service="kleuren" data-price="65" data-duration="90">
+                        <h3>Kleuren</h3>
+                        <p>€65 - 90 min</p>
+                    </div>
+                    <div class="service-card" data-service="highlights" data-price="75" data-duration="120">
+                        <h3>Highlights</h3>
+                        <p>€75 - 120 min</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Tijd *</label>
+                <div class="availability-legend">
+                    <div class="legend-item">
+                        <div class="legend-color available"></div>
+                        <span>Beschikbaar</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color selected"></div>
+                        <span>Geselecteerd</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color booked"></div>
+                        <span>Bezet</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color past"></div>
+                        <span>Verstreken</span>
+                    </div>
+                </div>
+                <div id="availabilityStatus"></div>
+                <div class="time-slots" id="timeSlots">
+                    <!-- Time slots will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Afspraak Boeken
+            </button>
+        </form>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // Configuration - Nieuwe Google Script URL (met bookAppointment via GET)
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHU_0FTAmtxyexv2ezzTdZYiYiwrDtLCHp-BbP70H4uZapsRR7r2UqQKAAB5u5BlIeDQ/exec';
+        
+        // Set to true to use only demo data (for testing)
+        const DEMO_MODE = false;
+        
+        // Mock data for demonstration (replace with actual Google Sheets data)
+        let mockBookedAppointments = [
+            { date: '2025-06-09', time: '10:00', service: 'knippen' },
+            { date: '2025-06-09', time: '14:30', service: 'kleuren' },
+            { date: '2025-06-10', time: '09:00', service: 'wassen-knippen' },
+            { date: '2025-06-10', time: '11:00', service: 'highlights' },
+            { date: '2025-06-11', time: '15:00', service: 'knippen' }
+        ];
+        
+        // State
+        let selectedService = null;
+        let selectedTime = null;
+        let selectedServiceData = null;
+        let bookedSlots = [];
+
+        // DOM Elements
+        const form = document.getElementById('appointmentForm');
+        const dateInput = document.getElementById('date');
+        const serviceCards = document.querySelectorAll('.service-card');
+        const timeSlotsContainer = document.getElementById('timeSlots');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+        const availabilityStatus = document.getElementById('availabilityStatus');
+
+        // Set minimum date to today
+        const today = new Date();
+        dateInput.min = today.toISOString().split('T')[0];
+
+        // Service selection
+        serviceCards.forEach(card => {
+            card.addEventListener('click', () => {
+                serviceCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                
+                selectedService = card.dataset.service;
+                selectedServiceData = {
+                    service: card.dataset.service,
+                    price: card.dataset.price,
+                    duration: card.dataset.duration
+                };
+                
+                updateTimeSlots();
+            });
+        });
+
+        // Date change handler
+        dateInput.addEventListener('change', updateTimeSlots);
+
+        // Generate time slots
+        function generateTimeSlots() {
+            const times = [];
+            const startHour = 9;
+            const endHour = 18;
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    times.push(timeString);
+                }
+            }
+            
+            return times;
+        }
+
+        // Update time slots based on selected date and service
+        async function updateTimeSlots() {
+            if (!selectedService || !dateInput.value) {
+                timeSlotsContainer.innerHTML = '<p style="text-align: center; color: #666;">Selecteer eerst een service en datum</p>';
+                availabilityStatus.innerHTML = '';
+                return;
+            }
+
+            const selectedDate = new Date(dateInput.value);
+            const dayOfWeek = selectedDate.getDay();
+            
+            // Check if Sunday (closed)
+            if (dayOfWeek === 0) {
+                timeSlotsContainer.innerHTML = '<p style="text-align: center; color: #721c24;">Zondag gesloten</p>';
+                availabilityStatus.innerHTML = '';
+                return;
+            }
+
+            // Show loading status
+            availabilityStatus.innerHTML = '<div class="availability-status loading"><div class="loading-spinner"></div>Beschikbaarheid laden...</div>';
+
+            try {
+                // Get booked appointments for selected date
+                await loadBookedAppointments(dateInput.value);
+                
+                const times = generateTimeSlots();
+                const now = new Date();
+                const isToday = selectedDate.toDateString() === now.toDateString();
+                const serviceDuration = parseInt(selectedServiceData.duration);
+                
+                timeSlotsContainer.innerHTML = '';
+                let availableCount = 0;
+                let bookedCount = 0;
+                
+                times.forEach(time => {
+                    const [hour, minute] = time.split(':').map(Number);
+                    const slotDateTime = new Date(selectedDate);
+                    slotDateTime.setHours(hour, minute, 0, 0);
+                    
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.textContent = time;
+                    timeSlot.dataset.time = time;
+                    
+                    // Check if time has passed (for today)
+                    if (isToday && slotDateTime <= now) {
+                        timeSlot.classList.add('unavailable');
+                        timeSlot.title = 'Tijd is verstreken';
+                    } 
+                    // Check if slot is booked or conflicts with existing booking
+                    else if (isSlotBooked(dateInput.value, time, serviceDuration)) {
+                        timeSlot.classList.add('booked');
+                        timeSlot.title = 'Tijdslot is bezet';
+                        bookedCount++;
+                    } 
+                    // Available slot
+                    else {
+                        timeSlot.addEventListener('click', () => {
+                            document.querySelectorAll('.time-slot').forEach(slot => 
+                                slot.classList.remove('selected')
+                            );
+                            timeSlot.classList.add('selected');
+                            selectedTime = time;
+                        });
+                        timeSlot.title = 'Beschikbaar - klik om te selecteren';
+                        availableCount++;
+                    }
+                    
+                    timeSlotsContainer.appendChild(timeSlot);
+                });
+
+                // Update availability status
+                const totalSlots = times.length;
+                const pastSlots = totalSlots - availableCount - bookedCount;
+                
+                availabilityStatus.innerHTML = `
+                    <div class="availability-status">
+                        📅 ${availableCount} beschikbaar • 
+                        ❌ ${bookedCount} bezet • 
+                        ⏰ ${pastSlots} verstreken
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading availability:', error);
+                availabilityStatus.innerHTML = '<div class="availability-status error">❌ Fout bij laden beschikbaarheid</div>';
+            }
+        }
+
+        // Check if a time slot is booked or conflicts with service duration
+        function isSlotBooked(date, time, serviceDuration) {
+            const [hour, minute] = time.split(':').map(Number);
+            const slotStart = hour * 60 + minute; // Convert to minutes
+            const slotEnd = slotStart + serviceDuration;
+            
+            return bookedSlots.some(booking => {
+                if (booking.date !== date) return false;
+                
+                const [bookedHour, bookedMinute] = booking.time.split(':').map(Number);
+                const bookedStart = bookedHour * 60 + bookedMinute;
+                const bookedEnd = bookedStart + parseInt(getServiceDuration(booking.service));
+                
+                // Check for overlap
+                return (slotStart < bookedEnd && slotEnd > bookedStart);
+            });
+        }
+
+        // Get service duration based on service type
+        function getServiceDuration(serviceType) {
+            const durations = {
+                'knippen': 30,
+                'wassen-knippen': 45,
+                'kleuren': 90,
+                'highlights': 120
+            };
+            return durations[serviceType] || 30;
+        }
+
+        // Load booked appointments from Google Sheets
+        async function loadBookedAppointments(date) {
+            // If demo mode is enabled, use mock data
+            if (DEMO_MODE) {
+                console.log('Demo mode enabled - using mock data');
+                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+                bookedSlots = mockBookedAppointments.filter(appointment => appointment.date === date);
+                return;
+            }
+            
+            try {
+                console.log('Loading bookings for date:', date);
+                console.log('Using URL:', `${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}`);
+                
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Received result:', result);
+                
+                if (result.error) {
+                    console.error('Server error:', result.error);
+                    throw new Error(result.error);
+                }
+                
+                bookedSlots = result.bookings || [];
+                console.log('Loaded booked slots:', bookedSlots);
+                
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                console.log('Falling back to mock data');
+                
+                // Fallback to mock data if Google Sheets fails
+                bookedSlots = mockBookedAppointments.filter(appointment => appointment.date === date);
+                
+                // Show user-friendly error message but continue with mock data
+                availabilityStatus.innerHTML = '<div class="availability-status error">⚠️ Kon echte beschikbaarheid niet laden - toont demo data</div>';
+                
+                // Don't throw error, allow system to continue with mock data
+                return;
+            }
+        }
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedService || !selectedTime) {
+                showMessage('Selecteer een service en tijd', 'error');
+                return;
+            }
+
+            const formData = new FormData(form);
+            const appointmentData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                date: formData.get('date'),
+                time: selectedTime,
+                service: selectedServiceData.service,
+                price: selectedServiceData.price,
+                duration: selectedServiceData.duration,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                submitBtn.classList.add('loading');
+                submitBtn.textContent = 'Bezig met boeken...';
+                
+                // Simulate API call (replace with actual Google Scripts call)
+                await simulateBooking(appointmentData);
+                
+                showMessage(
+                    `Afspraak succesvol geboekt voor ${appointmentData.name} op ${appointmentData.date} om ${appointmentData.time}. Een bevestiging is verzonden naar ${appointmentData.email}.`,
+                    'success'
+                );
+                
+                form.reset();
+                selectedService = null;
+                selectedTime = null;
+                selectedServiceData = null;
+                serviceCards.forEach(card => card.classList.remove('selected'));
+                timeSlotsContainer.innerHTML = '';
+                
+            } catch (error) {
+                console.error('Booking submission error:', error);
+                showMessage(`Fout bij boeken: ${error.message}. Controleer de console voor details.`, 'error');
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Afspraak Boeken';
+            }
+        });
+
+        // Book appointment with Google Sheets (using GET instead of POST to avoid CORS issues)
+        async function simulateBooking(data) {
+            try {
+                console.log('Sending booking data via GET:', data);
+                
+                // Convert to GET request with URL parameters
+                const params = new URLSearchParams({
+                    action: 'bookAppointment',
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                    date: data.date,
+                    time: data.time,
+                    service: data.service,
+                    price: data.price,
+                    duration: data.duration
+                });
+                
+                const url = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                console.log('Using URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    console.error('Response was:', responseText);
+                    throw new Error('Ongeldige response van server: ' + responseText.substring(0, 100));
+                }
+                
+                console.log('Parsed result:', result);
+                
+                if (result.error) {
+                    throw new Error('Server fout: ' + result.error);
+                }
+                
+                if (!result.success) {
+                    throw new Error('Afspraak werd niet succesvol geboekt');
+                }
+                
+                return result;
+                
+            } catch (error) {
+                console.error('Detailed booking error:', error);
+                
+                // Fallback: still add to mock data for demo purposes
+                mockBookedAppointments.push({
+                    date: data.date,
+                    time: data.time,
+                    service: data.service,
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone
+                });
+                
+                // Re-throw with more detail
+                throw new Error(`Booking failed: ${error.message}`);
+            }
+        }
+
+        // Actual Google Scripts integration (uncomment and configure)
+        /*
+        async function bookAppointment(data) {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'bookAppointment',
+                        ...data
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function loadBookedAppointmentsFromGoogleSheets(date) {
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getBookings&date=${date}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const result = await response.json();
+                return result.bookings || [];
+            } catch (error) {
+                throw error;
+            }
+        }
+        */
+
+        // Show message function
+        function showMessage(message, type) {
+            messageDiv.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Initialize
+        updateTimeSlots();
+    </script>
+</body>
+</html>

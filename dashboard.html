@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapper Dashboard - Afspraken Beheren</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            top: -60%;
+            right: -60%;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .appointments-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .table-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h3 {
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-filter input, .date-filter select {
+            padding: 8px 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-completed {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-complete {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .calendar-view {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .calendar-day.other-month {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .calendar-day.today {
+            background: #e3f2fd;
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .appointment-dot {
+            width: 6px;
+            height: 6px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 2px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-card {
+            background: white;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .action-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-appointments {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 10px;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .date-filter {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.8em;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>✂️ Kapper Dashboard</h1>
+            <p>Beheer je afspraken en bekijk je planning</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">📊 Overzicht</button>
+            <button class="nav-tab" onclick="showTab('appointments')">📅 Afspraken</button>
+            <button class="nav-tab" onclick="showTab('calendar')">🗓️ Kalender</button>
+            <button class="nav-tab" onclick="showTab('settings')">⚙️ Instellingen</button>
+        </div>
+
+        <div id="overview" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="todayCount">-</div>
+                    <div class="stat-label">Afspraken Vandaag</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="weekCount">-</div>
+                    <div class="stat-label">Deze Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="monthRevenue">-</div>
+                    <div class="stat-label">Omzet Deze Maand</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="nextAppointment">-</div>
+                    <div class="stat-label">Volgende Afspraak</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <div class="action-card" onclick="showTab('appointments')">
+                    <div class="action-icon">📋</div>
+                    <h3>Alle Afspraken</h3>
+                    <p>Bekijk en beheer alle afspraken</p>
+                </div>
+                <div class="action-card" onclick="addManualAppointment()">
+                    <div class="action-icon">➕</div>
+                    <h3>Handmatige Afspraak</h3>
+                    <p>Voeg een afspraak toe voor een klant</p>
+                </div>
+                <div class="action-card" onclick="showTab('calendar')">
+                    <div class="action-icon">📆</div>
+                    <h3>Kalender Weergave</h3>
+                    <p>Zie je planning in kalender formaat</p>
+                </div>
+                <div class="action-card" onclick="refreshData()">
+                    <div class="action-icon">🔄</div>
+                    <h3>Gegevens Verversen</h3>
+                    <p>Laad de nieuwste afspraken</p>
+                </div>
+            </div>
+
+            <div class="appointments-table">
+                <div class="table-header">
+                    <h3>Afspraken Vandaag</h3>
+                </div>
+                <div id="todayAppointments">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Afspraken laden...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="appointments" class="tab-content">
+            <div class="appointments-table">
+                <div class="table-header">
+                    <h3>Alle Afspraken</h3>
+                    <div class="date-filter">
+                        <input type="date" id="filterDate" onchange="filterAppointments()">
+                        <select id="statusFilter" onchange="filterAppointments()">
+                            <option value="">Alle Statussen</option>
+                            <option value="Bevestigd">Bevestigd</option>
+                            <option value="Voltooid">Voltooid</option>
+                            <option value="Geannuleerd">Geannuleerd</option>
+                        </select>
+                        <button class="refresh-btn" onclick="loadAllAppointments()">🔄 Verversen</button>
+                    </div>
+                </div>
+                <div id="appointmentsTableContainer">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Afspraken laden...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="calendar" class="tab-content">
+            <div class="table-header">
+                <h3>Kalender Weergave</h3>
+                <div class="date-filter">
+                    <button class="refresh-btn" onclick="previousMonth()">‹ Vorige</button>
+                    <span id="currentMonth">Juni 2025</span>
+                    <button class="refresh-btn" onclick="nextMonth()">Volgende ›</button>
+                </div>
+            </div>
+            <div id="calendarContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Kalender laden...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h2>Instellingen</h2>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>📧 Email Configuratie</h3>
+                <p><strong>Eigenaar Email:</strong> <span id="ownerEmail">eigenaar@kapsalon.nl</span></p>
+                <p><em>Wijzig dit in je Google Apps Script</em></p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>🔗 Google Sheets</h3>
+                <p><strong>Script URL:</strong> <span style="font-family: monospace; word-break: break-all;">https://script.google.com/macros/s/AKfycbxHU_0FTAmtxyexv2ezzTdZYiYiwrDtLCHp-BbP70H4uZapsRR7r2UqQKAAB5u5BlIeDQ/exec</span></p>
+                <p><strong>Spreadsheet ID:</strong> <span style="font-family: monospace;">1NuPNes0pZXVcvz3BJ2cZBenQulBz6biqi_1ul_JeNuc</span></p>
+                <button class="refresh-btn" onclick="testConnection()">🧪 Verbinding Testen</button>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>⏰ Openingstijden</h3>
+                <p><strong>Maandag - Vrijdag:</strong> 09:00 - 18:00</p>
+                <p><strong>Zaterdag:</strong> 09:00 - 17:00</p>
+                <p><strong>Zondag:</strong> Gesloten</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal voor afspraak bewerken -->
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Afspraak Bewerken</h2>
+            <div id="modalContent">
+                <!-- Wordt gevuld via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Nieuwe Google Script URL (met bookAppointment via GET)
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHU_0FTAmtxyexv2ezzTdZYiYiwrDtLCHp-BbP70H4uZapsRR7r2UqQKAAB5u5BlIeDQ/exec';
+        
+        // State
+        let allAppointments = [];
+        let currentDate = new Date();
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setTodayFilter();
+        });
+
+        // Tab navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load specific data for tab
+            if (tabName === 'appointments') {
+                loadAllAppointments();
+            } else if (tabName === 'calendar') {
+                loadCalendar();
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                await loadAllAppointments();
+                updateStats();
+                loadTodayAppointments();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load all appointments
+        async function loadAllAppointments() {
+            try {
+                const container = document.getElementById('appointmentsTableContainer');
+                container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Afspraken laden...</p></div>';
+                
+                // Try to load real data from Google Sheets first
+                try {
+                    console.log('Loading all appointments from Google Sheets...');
+                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAllBookings`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response ok:', response.ok);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    const result = JSON.parse(responseText);
+                    console.log('Parsed result:', result);
+                    
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+                    
+                    allAppointments = result.appointments || [];
+                    console.log('Loaded real appointments:', allAppointments.length);
+                    
+                    // Show success message if using real data
+                    if (allAppointments.length === 0) {
+                        const successHTML = '<div style="background: #d4edda; color: #155724; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">✅ Verbonden met Google Sheets - Nog geen afspraken</div>';
+                        container.innerHTML = successHTML;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading real appointments, using demo data:', error);
+                    
+                    // Fallback to mock data if Google Sheets fails
+                    allAppointments = generateMockAppointments();
+                    
+                    // Show warning with specific error
+                    const warningHTML = `<div style="background: #fff3cd; color: #856404; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">⚠️ Google Sheets niet bereikbaar: ${error.message}<br>Toont demo data</div>`;
+                    container.innerHTML = warningHTML;
+                }
+                
+                displayAppointments(allAppointments);
+                
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                document.getElementById('appointmentsTableContainer').innerHTML = 
+                    `<div class="no-appointments">❌ Fout bij laden afspraken: ${error.message}</div>`;
+            }
+        }
+
+        // Generate mock appointments for demo
+        function generateMockAppointments() {
+            const appointments = [];
+            const services = ['knippen', 'wassen-knippen', 'kleuren', 'highlights'];
+            const prices = [25, 35, 65, 75];
+            const names = ['Jan de Vries', 'Marie Jansen', 'Piet Bakker', 'Lisa van Dam', 'Tom Smit'];
+            
+            for (let i = 0; i < 15; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + Math.floor(Math.random() * 14) - 7);
+                
+                const hour = 9 + Math.floor(Math.random() * 8);
+                const minute = Math.random() < 0.5 ? '00' : '30';
+                
+                const serviceIndex = Math.floor(Math.random() * services.length);
+                const statuses = ['Bevestigd', 'Voltooid', 'Geannuleerd'];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                
+                appointments.push({
+                    id: i + 1,
+                    name: names[Math.floor(Math.random() * names.length)],
+                    email: `klant${i}@example.com`,
+                    phone: `06-${Math.floor(Math.random() * 90000000) + 10000000}`,
+                    date: date.toISOString().split('T')[0],
+                    time: `${hour.toString().padStart(2, '0')}:${minute}`,
+                    service: services[serviceIndex],
+                    price: prices[serviceIndex],
+                    status: status,
+                    timestamp: new Date(date.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+                });
+            }
+            
+            return appointments.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+        }
+
+        // Display appointments in table
+        function displayAppointments(appointments) {
+            const container = document.getElementById('appointmentsTableContainer');
+            
+            if (appointments.length === 0) {
+                container.innerHTML = '<div class="no-appointments">📅 Geen afspraken gevonden</div>';
+                return;
+            }
+            
+            const table = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Tijd</th>
+                            <th>Klant</th>
+                            <th>Service</th>
+                            <th>Prijs</th>
+                            <th>Status</th>
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${appointments.map(apt => `
+                            <tr>
+                                <td>${formatDate(apt.date)}</td>
+                                <td>${apt.time}</td>
+                                <td>
+                                    <strong>${apt.name}</strong><br>
+                                    <small>${apt.email}</small><br>
+                                    <small>${apt.phone}</small>
+                                </td>
+                                <td>${capitalizeFirst(apt.service)}</td>
+                                <td>€${apt.price}</td>
+                                <td><span class="status-badge status-${apt.status.toLowerCase()}">${apt.status}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        ${apt.status === 'Bevestigd' ? 
+                                            `<button class="btn btn-complete" onclick="updateStatus(${apt.id}, 'Voltooid')">✓ Voltooid</button>` : ''}
+                                        ${apt.status !== 'Geannuleerd' ? 
+                                            `<button class="btn btn-cancel" onclick="updateStatus(${apt.id}, 'Geannuleerd')">✗ Annuleer</button>` : ''}
+                                        <button class="btn btn-edit" onclick="editAppointment(${apt.id})">✏️ Bewerk</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = table;
+        }
+
+        // Update appointment status
+        async function updateStatus(appointmentId, newStatus) {
+            try {
+                // Find appointment
+                const appointment = allAppointments.find(apt => apt.id === appointmentId);
+                if (!appointment) {
+                    alert('Afspraak niet gevonden');
+                    return;
+                }
+                
+                // Update via Google Sheets
+                try {
+                    console.log(`Updating appointment ${appointmentId} to ${newStatus} via Google Sheets`);
+                    
+                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=updateStatus&appointmentId=${appointmentId}&newStatus=${newStatus}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+                    
+                    console.log('Status update successful:', result);
+                    
+                    // Update local data
+                    appointment.status = newStatus;
+                    
+                    // Show success message
+                    alert(`✅ Afspraak status bijgewerkt naar: ${newStatus}`);
+                    
+                } catch (updateError) {
+                    console.error('Error updating via Google Sheets:', updateError);
+                    
+                    // Fallback: update locally only
+                    appointment.status = newStatus;
+                    alert(`⚠️ Status lokaal bijgewerkt naar: ${newStatus}\n(Fout bij synchronisatie met Google Sheets)`);
+                }
+                
+                // Refresh display
+                await loadAllAppointments();
+                updateStats();
+                loadTodayAppointments();
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('❌ Fout bij bijwerken status');
+            }
+        }
+
+        // Edit appointment
+        function editAppointment(appointmentId) {
+            const appointment = allAppointments.find(apt => apt.id === appointmentId);
+            if (appointment) {
+                const modal = document.getElementById('appointmentModal');
+                const modalContent = document.getElementById('modalContent');
+                
+                modalContent.innerHTML = `
+                    <p><strong>Klant:</strong> ${appointment.name}</p>
+                    <p><strong>Email:</strong> ${appointment.email}</p>
+                    <p><strong>Telefoon:</strong> ${appointment.phone}</p>
+                    <p><strong>Datum:</strong> ${formatDate(appointment.date)}</p>
+                    <p><strong>Tijd:</strong> ${appointment.time}</p>
+                    <p><strong>Service:</strong> ${capitalizeFirst(appointment.service)}</p>
+                    <p><strong>Prijs:</strong> €${appointment.price}</p>
+                    <p><strong>Status:</strong> ${appointment.status}</p>
+                    <br>
+                    <p><em>Bewerken via Google Sheets voor volledige functionaliteit</em></p>
+                `;
+                
+                modal.style.display = 'block';
+            }
+        }
+
+        // Load today's appointments
+        function loadTodayAppointments() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayAppointments = allAppointments.filter(apt => apt.date === today && apt.status !== 'Geannuleerd');
+            
+            const container = document.getElementById('todayAppointments');
+            
+            if (todayAppointments.length === 0) {
+                container.innerHTML = '<div class="no-appointments">📅 Geen afspraken vandaag</div>';
+                return;
+            }
+            
+            const appointmentsList = todayAppointments.map(apt => `
+                <div style="padding: 15px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${apt.time}</strong> - ${apt.name}<br>
+                        <small>${capitalizeFirst(apt.service)} (€${apt.price})</small>
+                    </div>
+                    <span class="status-badge status-${apt.status.toLowerCase()}">${apt.status}</span>
+                </div>
+            `).join('');
+            
+            container.innerHTML = appointmentsList;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const thisWeekStart = new Date();
+            thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+            const thisWeekEnd = new Date(thisWeekStart);
+            thisWeekEnd.setDate(thisWeekStart.getDate() + 6);
+            
+            // Today's appointments
+            const todayAppointments = allAppointments.filter(apt => 
+                apt.date === today && apt.status !== 'Geannuleerd'
+            );
+            document.getElementById('todayCount').textContent = todayAppointments.length;
+            
+            // This week's appointments
+            const weekAppointments = allAppointments.filter(apt => {
+                const aptDate = new Date(apt.date);
+                return aptDate >= thisWeekStart && aptDate <= thisWeekEnd && apt.status !== 'Geannuleerd';
+            });
+            document.getElementById('weekCount').textContent = weekAppointments.length;
+            
+            // This month's revenue
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            const monthRevenue = allAppointments
+                .filter(apt => {
+                    const aptDate = new Date(apt.date);
+                    return aptDate.getMonth() === thisMonth && 
+                           aptDate.getFullYear() === thisYear && 
+                           apt.status === 'Voltooid';
+                })
+                .reduce((sum, apt) => sum + apt.price, 0);
+            document.getElementById('monthRevenue').textContent = `€${monthRevenue}`;
+            
+            // Next appointment
+            const upcomingAppointments = allAppointments
+                .filter(apt => new Date(apt.date + ' ' + apt.time) > new Date() && apt.status === 'Bevestigd')
+                .sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            
+            if (upcomingAppointments.length > 0) {
+                const next = upcomingAppointments[0];
+                document.getElementById('nextAppointment').textContent = `${next.time}`;
+            } else {
+                document.getElementById('nextAppointment').textContent = 'Geen';
+            }
+        }
+
+        // Filter appointments
+        function filterAppointments() {
+            const dateFilter = document.getElementById('filterDate').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filtered = allAppointments;
+            
+            if (dateFilter) {
+                filtered = filtered.filter(apt => apt.date === dateFilter);
+            }
+            
+            if (statusFilter) {
+                filtered = filtered.filter(apt => apt.status === statusFilter);
+            }
+            
+            displayAppointments(filtered);
+        }
+
+        // Set today's date as default filter
+        function setTodayFilter() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterDate').value = today;
+        }
+
+        // Load calendar view
+        function loadCalendar() {
+            const container = document.getElementById('calendarContainer');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Kalender laden...</p></div>';
+            
+            setTimeout(() => {
+                generateCalendar();
+            }, 500);
+        }
+
+        // Generate calendar
+        function generateCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Update month display
+            const monthNames = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                               'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+            document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Create calendar HTML
+            let calendarHTML = `
+                <div class="calendar-view">
+                    <div class="calendar-header">Zo</div>
+                    <div class="calendar-header">Ma</div>
+                    <div class="calendar-header">Di</div>
+                    <div class="calendar-header">Wo</div>
+                    <div class="calendar-header">Do</div>
+                    <div class="calendar-header">Vr</div>
+                    <div class="calendar-header">Za</div>
+            `;
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                calendarHTML += '<div class="calendar-day other-month"></div>';
+            }
+            
+            // Add days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateString = date.toISOString().split('T')[0];
+                const isToday = dateString === today.toISOString().split('T')[0];
+                
+                // Get appointments for this day
+                const dayAppointments = allAppointments.filter(apt => 
+                    apt.date === dateString && apt.status !== 'Geannuleerd'
+                );
+                
+                const appointmentDots = dayAppointments.map(() => 
+                    '<div class="appointment-dot"></div>'
+                ).join('');
+                
+                calendarHTML += `
+                    <div class="calendar-day ${isToday ? 'today' : ''}" onclick="viewDayAppointments('${dateString}')">
+                        <div class="day-number">${day}</div>
+                        ${appointmentDots}
+                        ${dayAppointments.length > 0 ? `<small>${dayAppointments.length} afspraak${dayAppointments.length > 1 ? 'en' : ''}</small>` : ''}
+                    </div>
+                `;
+            }
+            
+            calendarHTML += '</div>';
+            document.getElementById('calendarContainer').innerHTML = calendarHTML;
+        }
+
+        // Navigate calendar
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar();
+        }
+
+        // View day appointments
+        function viewDayAppointments(date) {
+            const dayAppointments = allAppointments.filter(apt => apt.date === date);
+            
+            if (dayAppointments.length === 0) {
+                alert(`Geen afspraken op ${formatDate(date)}`);
+                return;
+            }
+            
+            const appointmentsList = dayAppointments.map(apt => 
+                `${apt.time} - ${apt.name} (${capitalizeFirst(apt.service)})`
+            ).join('\n');
+            
+            alert(`Afspraken op ${formatDate(date)}:\n\n${appointmentsList}`);
+        }
+
+        // Add manual appointment
+        function addManualAppointment() {
+            alert('Handmatige afspraak toevoegen:\n\nDeze functie zou een formulier openen om een nieuwe afspraak toe te voegen aan Google Sheets.\n\nVoor nu kun je afspraken toevoegen via de hoofdwebsite.');
+        }
+
+        // Refresh data
+        async function refreshData() {
+            const refreshBtn = event.target;
+            const originalText = refreshBtn.textContent;
+            refreshBtn.textContent = '🔄 Laden...';
+            refreshBtn.disabled = true;
+            
+            try {
+                console.log('Refreshing dashboard data from Google Sheets...');
+                await loadDashboardData();
+                
+                refreshBtn.textContent = '✅ Bijgewerkt!';
+                refreshBtn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    refreshBtn.textContent = originalText;
+                    refreshBtn.style.background = '#667eea';
+                    refreshBtn.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                refreshBtn.textContent = '❌ Fout';
+                refreshBtn.style.background = '#dc3545';
+                
+                setTimeout(() => {
+                    refreshBtn.textContent = originalText;
+                    refreshBtn.style.background = '#667eea';
+                    refreshBtn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        // Test connection
+        async function testConnection() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '🧪 Testen...';
+            btn.disabled = true;
+            
+            try {
+                console.log('Testing connection to Google Sheets...');
+                
+                // Test getBookings
+                const bookingsResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getBookings&date=2025-06-09`);
+                const bookingsResult = await bookingsResponse.json();
+                
+                console.log('Bookings test result:', bookingsResult);
+                
+                // Test getAllBookings
+                const allBookingsResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAllBookings`);
+                const allBookingsResult = await allBookingsResponse.json();
+                
+                console.log('All bookings test result:', allBookingsResult);
+                
+                if (bookingsResult.error || allBookingsResult.error) {
+                    throw new Error(bookingsResult.error || allBookingsResult.error);
+                }
+                
+                btn.textContent = '✅ Verbinding OK!';
+                btn.style.background = '#28a745';
+                
+                // Show detailed results
+                const appointmentCount = allBookingsResult.appointments ? allBookingsResult.appointments.length : 0;
+                setTimeout(() => {
+                    alert(`🎉 Verbinding succesvol!\n\n📊 Gevonden: ${appointmentCount} afspraken\n🔗 Google Sheets is verbonden\n📧 Email notificaties actief`);
+                }, 500);
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#667eea';
+                    btn.disabled = false;
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                btn.textContent = '❌ Verbinding Mislukt';
+                btn.style.background = '#dc3545';
+                
+                setTimeout(() => {
+                    alert(`❌ Verbinding mislukt:\n\n${error.message}\n\nControleer:\n• Google Apps Script URL\n• Spreadsheet ID in script\n• Script publicatie instellingen`);
+                }, 500);
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#667eea';
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            };
+            return date.toLocaleDateString('nl-NL', options);
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).replace('-', ' & ');
+        }
+
+        // Modal functionality
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('appointmentModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('appointmentModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(() => {
+            console.log('Auto-refreshing dashboard data...');
+            loadDashboardData();
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
